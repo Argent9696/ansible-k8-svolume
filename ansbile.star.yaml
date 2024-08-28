@@ -1,0 +1,48 @@
+---
+- name: Создаем директорию для PVC манифеста и настраиваем конфиг
+  hosts: localhost
+  become: no
+
+  tasks:
+  - name: Создаем директорию
+    file:
+      path: /home/argent/dz2008
+      state: directory
+
+  - name: Добавляем манифест из шаблона для PVC
+    template:
+      src: /home/argent/templates/pvc.yaml.j2
+      dest: /home/argent/dz2008/pvc.yaml
+      mode: '0644'
+    vars:
+      storage_class_name: "my-sc"
+      access_modes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+
+  - name: Добавляем манифест для PC
+    template:  # Исправлено на правильное имя модуля
+      src: /home/argent/templates/pc.yaml.j2
+      dest: /home/argent/dz2008/pc.yaml
+      mode: '0644'  # Можно добавить права на файл как в предыдущей задаче
+    vars:
+      storage_class_name: "my-sc"
+      access_modes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+
+  - name: Женим PVC + pod
+    template:
+      src: /home/argent/templates/pod.yaml.j2
+      dest: /home/argent/dz2008/pod.yaml
+      mode: '0644'
+
+    vars:
+      pvc_name: "star-pvc"
+
+  - name: Запускаем pod
+    command: kubectl apply -f /home/argent/dz2008/pod.yaml
